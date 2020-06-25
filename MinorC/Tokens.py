@@ -19,6 +19,7 @@ reserved = {
     'goto':     'R_GOTO',
     'if':       'R_IF',
     'int':      'R_INT',
+    'main':     'R_MAIN',
     'printf':   'R_PRINTF',
     'register': 'R_REGISTER',
     'return':   'R_RETURN',
@@ -50,7 +51,7 @@ tokens = [
     'S_SEMICOLON',
     'S_LESS',
     'S_GREATER',
-    'S_TERNARY',
+    'OP_TERNARY',
     'OP_INCREASE',
     'OP_DECREASE',
     'OP_ASSIGN_SUM',
@@ -75,7 +76,7 @@ tokens = [
     'OPB_XOR',
     'OPB_L_SHIFT',
     'OPB_R_SHIFT',
-    'IDENTIFIER',
+    'ID',
     'DECIMAL',
     'INTEGER',
     'CHARACTER',
@@ -102,7 +103,7 @@ t_S_COLON               = r':'
 t_S_SEMICOLON           = r';'
 t_S_LESS                = r'<'
 t_S_GREATER             = r'>'
-t_S_TERNARY             = r'\?'
+t_OP_TERNARY             = r'\?'
 t_OP_INCREASE           = r'\+\+'
 t_OP_DECREASE           = r'--'
 t_OP_ASSIGN_SUM         = r'\+='
@@ -130,35 +131,23 @@ t_OPB_R_SHIFT           = r'>>'
 
 def t_IDENTIFIER(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
-    t.type = reserved.get(t.value, 'IDENTIFIER')
+    t.type = reserved.get(t.value, 'ID')
     return t
 
 def t_DECIMAL(t):
     r'\d+\.\d+'
-    try:
-        t.value = float(t.value)
-    except ValueError:
-        print("No se pudo convertir %d", t.value)
-        t.value = 0
     return t
 
 def t_INTEGER(t):
     r'\d+'
-    try:
-        t.value = int(t.value)
-    except ValueError:
-        print("No se pudo convertir %d", t.value)
-        t.value = 0
     return t
 
 def t_CHARACTER(t):
     r'(\".\"|\'.\')'
-    t.value = t.value[1:-1]
     return t
 
 def t_STRING(t):
     r'(\'.*?\'|\".*?\")'
-    t.value = t.value[1:-1]
     return t
 
 def t_COMMENT(t):
