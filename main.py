@@ -13,4 +13,5 @@ if __name__ == "__main__":
             if not tok:
                 break
             print(tok)
-        AscendentParser.parse(value)
+        instructions = AscendentParser.parse(value)
+        print(instructions)
