@@ -289,9 +289,8 @@ def translate_expression(expression):
     elif isinstance(expression, Conversion):
         temporal = inc_temp()
         # $t0 = (int) 'operand';
-        expression = translate_expression(expression.expression)
-        append_to_label(
-            temporal + ' = (' + type + ') ' + expression + ';\n')
+        expr = translate_expression(expression.expression)
+        append_to_label(temporal + ' = (' + expression.type + ') ' + expr + ';\n')
         return temporal
     elif isinstance(expression, str):
         append_to_label(temporal + ' = ' + expression + ';\n')

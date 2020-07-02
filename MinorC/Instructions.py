@@ -229,7 +229,7 @@ class Conversion(Expression):
     'Esta clase podria ser considerada expresion y heredar de Unary'
 
     def __init__(self, type, expression):
-        self.type = set_type(type)
+        self.type = type
         self.expression = expression
 
 

@@ -1050,8 +1050,8 @@ def p_error(p):
 
 def reset_dot():
     global dot
-    dot = Graph('AST')
-    dot.filename = 'AST'
+    dot = Graph('MinorC_AST')
+    dot.filename = 'MinorC_AST'
     dot.format = 'png'
 
 
