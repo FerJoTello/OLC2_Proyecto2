@@ -12,6 +12,7 @@
                         |   <ASSIGNATION>
                         |   <STRUCT_DEFINITION>
                         |   <STRUCT_INSTANCE>
+                        |   <STRUCT_ASSIGNATION>
                         |   <FUNCTION>
 
 <FUNCTION>::=           /   <FUNCTION_ID> ( <LIST_PARAM> ) <BLOCK>
@@ -40,6 +41,7 @@
 <INSTRUCTION>::=        /   <DECLARATION>
                         |   <STRUCT_DEFINITION>
                         |   <STRUCT_INSTANCE>
+                        |   <STRUCT_ASSIGNATION>
                         |   <ASSIGNATION>
                         |   <LABEL>
                         |   <IF>
@@ -79,6 +81,8 @@
                         |   <DECLARATION>       
 
 <STRUCT_INSTANCE>::=    /   <STRUCT_TYPE> <IDENTIFIER> ;
+
+<STRUCT_ASSIGNATION>::= /   <IDENTIFIER> . <IDENTIFIER> = <EXPRESSION> ;
 
 <IDENTIFIER>::=         /   id <BRACKETS>
                         |   id

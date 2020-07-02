@@ -1,5 +1,5 @@
-print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__,__name__,str(__package__)))
 from enum import Enum
+#print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__, __name__, str(__package__)))
 
 
 class TYPE(Enum):
@@ -10,6 +10,7 @@ class TYPE(Enum):
     STRING = 5
     VOID = 6
     STRUCT = 7
+    ARRAY = 8
 
 
 def set_type(type):
@@ -39,9 +40,14 @@ def set_value(type):
     return types.get(type, None)
 
 
+class DeclarationList:
+    def __init__(self, declarations):
+        self.declarations = declarations
+
+
 class Declaration:
     def __init__(self, type, identifier, expression):
-        self.type = set_type
+        self.type = set_type(type)
         self.identifier = identifier
         self.expression = expression
 
@@ -67,11 +73,11 @@ class Function:
 
 
 class Main:
-    def __init__(self, instructions):
+    def __init__(self, block):
         self.return_type = TYPE.INTEGER
         self.id = 'main'
         self.parameters = None
-        self.instructions = instructions
+        self.block = block
 
 
 class StructDefinition:
@@ -86,10 +92,15 @@ class StructInstance:
         self.identifier = identifier
 
 
+class StructAssignation:
+    def __init__(self, struct_identifier, expression):
+        self.struct_identifier = struct_identifier
+        self.expression = expression
+
+
 class Label:
     def __init__(self, id):
         self.id = id
-        self.instructions = None
 
 
 class If:
@@ -162,6 +173,7 @@ class Continue:
 class Scan:
     'Sirve de instancia para trasladar la instruccion pero no guarda ningun atributo.'
 
+
 class Return:
     def __init__(self, expression=None):
         self.expression = expression
@@ -195,6 +207,12 @@ class Identifier(Terminal):
         self.index_list = index_list
 
 
+class StructIdentifier(Terminal):
+    def __init__(self, identifier, atribute):
+        self.identifier = identifier
+        self.atribute = atribute
+
+
 class FunctionCall(Terminal):
     def __init__(self, id, parameters=None):
         self.id = id
@@ -202,12 +220,14 @@ class FunctionCall(Terminal):
 
 
 class Unary(Expression):
-    def __init__(self, operator, expression):
+    def __init__(self, operator, operand):
         self.operator = operator
-        self.expression = expression
+        self.operand = operand
 
 
-class Conversion(Unary):
+class Conversion(Expression):
+    'Esta clase podria ser considerada expresion y heredar de Unary'
+
     def __init__(self, type, expression):
         self.type = set_type(type)
         self.expression = expression
@@ -225,3 +245,7 @@ class Ternary(Expression):
         self.operand1 = operand1
         self.operand2 = operand2
         self.operand3 = operand3
+
+
+class Exit:
+    'Utilizado para determinar el fin del programa para Augus'

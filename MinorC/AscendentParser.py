@@ -1,11 +1,8 @@
-from graphviz import Graph
-from .Tokens import *
+from .Instructions import *
 from .ply.yacc import yacc
-from . import Instructions
-print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(
-    __file__, __name__, str(__package__)))
-# from .Translater import *
-# from .Gda import *
+from .Tokens import *
+from graphviz import Graph
+#print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__, __name__, str(__package__)))
 dot = None
 n = -1
 ast_nodes = {}
@@ -43,10 +40,12 @@ def p_start(p):
     'start              :   start_instructions main'
     node_index = node_inc()
     dot.node(node_index, 'start')
+    start_instructions = []
     for instruction in p[1]:
         dot.edge(node_index, instruction)
+        start_instructions.append(get_from_node(instruction))
     dot.edge(node_index, p[2])
-    add_to_node(node_index, p[1] + [p[2]])
+    add_to_node(node_index, start_instructions + [get_from_node(p[2])])
     p[0] = node_index
 
 
@@ -64,7 +63,9 @@ def p_main(p):
     node_index = node_inc()
     dot.node(node_index, 'int main( )')
     dot.edge(node_index, p[5])
-    new_main = Instructions.Main(get_from_node(p[5]))
+    block = get_from_node(p[5])
+    block.instructions.append(Exit())
+    new_main = Main(block)
     add_to_node(node_index, new_main)
     p[0] = node_index
 
@@ -84,6 +85,7 @@ def p_start_instruction(p):
                             |   assignation
                             |   struct_definition
                             |   struct_instance
+                            |   struct_assignation
                             |   function'''
     p[0] = p[1]
 
@@ -97,7 +99,7 @@ def p_function_params(p):
         parameters.append(get_from_node(param))
     dot.edge(p[1], p[5])
     block = get_from_node(p[5])
-    new_function = Instructions.Function(
+    new_function = Function(
         function_id[0], function_id[1], parameters, block)
     add_to_node(p[1], new_function)
     p[0] = p[1]
@@ -108,7 +110,7 @@ def p_function(p):
     dot.edge(p[1], p[4])
     function_id = get_from_node(p[1])
     block = get_from_node(p[4])
-    new_function = Instructions.Function(
+    new_function = Function(
         function_id[0], function_id[1], None, block)
     add_to_node(p[1], new_function)
     p[0] = p[1]
@@ -131,7 +133,7 @@ def p_parameter(p):
     dot.edge(node_index, p[1])
     dot.edge(node_index, p.slice[2].value)
     primitive_type = get_from_node(p[1])
-    new_parameter = Instructions.Parameter(primitive_type, p.slice[2].value)
+    new_parameter = Parameter(primitive_type, p.slice[2].value)
     add_to_node(node_index, new_parameter)
     p[0] = node_index
 
@@ -177,7 +179,7 @@ def p_block(p):
     for instruction in p[2]:
         dot.edge(node_index, instruction)
         instructions.append(get_from_node(instruction))
-    new_block = Instructions.Block(instructions)
+    new_block = Block(instructions)
     add_to_node(node_index, new_block)
     p[0] = node_index
 
@@ -196,6 +198,7 @@ def p_instruction(p):
     '''instruction      :   declaration
                         |   struct_definition
                         |   struct_instance
+                        |   struct_assignation
                         |   assignation
                         |   label
                         |   if
@@ -217,8 +220,12 @@ def p_instruction(p):
 
 def p_declaration(p):
     'declaration        :   primitive_type list_declaration S_SEMICOLON'
+    declarations = []
     for declaration in p[2]:
         dot.edge(p[1], declaration)
+        declarations.append(get_from_node(declaration))
+    new_declaration_list = DeclarationList(declarations)
+    add_to_node(p[1], new_declaration_list)
     p[0] = p[1]
 
 
@@ -231,9 +238,9 @@ def p_list_declaration_id_expression(p):
     dot.edge(node_index, node_index_id)
     dot.edge(node_index, p[5])
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(p.slice[1].value)
+    identifier = Identifier(p.slice[1].value)
     expression = get_from_node(p[3])
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     # translate_assignation(get_id(p.slice[3].value), ast_nodes.get(p[5]))
     p[0] = p[1] + [node_index]
@@ -244,9 +251,9 @@ def p_list_declaration_id(p):
     node_index = node_inc()
     dot.node(node_index, p.slice[3].value)
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(p.slice[1].value)
-    expression = Instructions.Terminal(type)
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    identifier = Identifier(p.slice[1].value)
+    expression = Terminal(type)
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     p[0] = p[1] + [node_index]
 
@@ -265,9 +272,9 @@ def p_list_declaration_id_expression_first(p):
     dot.edge(node_index, node_index_id)
     dot.edge(node_index, p[3])
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(p.slice[1].value)
+    identifier = Identifier(p.slice[1].value)
     expression = get_from_node(p[3])
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     # translate_assignation(get_id(p.slice[1].value), ast_nodes.get(p[3]))
     p[0] = [node_index]
@@ -279,9 +286,9 @@ def p_list_declaration_id_first(p):
     dot.node(node_index, p.slice[1].value)
     # translate_assignation(get_id(p.slice[1].value), '0')
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(p.slice[1].value)
-    expression = Instructions.Terminal(type)
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    identifier = Identifier(p.slice[1].value)
+    expression = Terminal(type)
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     p[0] = [node_index]
 
@@ -301,15 +308,15 @@ def p_array_declaration_expression(p):
     dot.edge(node_index, node_index_id)
     dot.edge(node_index, p[6])
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(
+    identifier = Identifier(
         p.slice[1].value, [get_from_node(p[3])])
     expression = get_from_node(p[6])
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     p[0] = node_index
 
 
-def p_array_declaration_empty(p):
+def p_array_declaration_empty_expression(p):
     'array_declaration  :   ID S_L_SQR_BRA S_R_SQR_BRA S_EQUAL array_expression'
     node_index = node_inc()
     dot.node(node_index, '=')
@@ -318,9 +325,21 @@ def p_array_declaration_empty(p):
     dot.edge(node_index, node_index_id)
     dot.edge(node_index, p[5])
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(p.slice[1].value, [])
+    identifier = Identifier(p.slice[1].value, [])
     expression = get_from_node(p[5])
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    new_declaration = Declaration(type, identifier, expression)
+    add_to_node(node_index, new_declaration)
+    p[0] = node_index
+
+
+def p_array_declaration_empty(p):
+    'array_declaration  :   ID S_L_SQR_BRA S_R_SQR_BRA'
+    node_index = node_inc()
+    dot.node(node_index, p.slice[1].value + '[ ]')
+    type = get_from_node(p[-1])
+    identifier = Identifier(p.slice[1].value, [])
+    expression = Terminal(type, 'array()')
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     p[0] = node_index
 
@@ -334,9 +353,9 @@ def p_array_declaration_id_brackets(p):
         dot.edge(node_index, node_bracket)
         index_list.append(get_from_node(node_bracket))
     type = get_from_node(p[-1])
-    identifier = Instructions.Identifier(p.slice[1].value, index_list)
-    expression = Instructions.Terminal(type)
-    new_declaration = Instructions.Declaration(type, identifier, expression)
+    identifier = Identifier(p.slice[1].value, index_list)
+    expression = Terminal(type)
+    new_declaration = Declaration(type, identifier, expression)
     add_to_node(node_index, new_declaration)
     p[0] = node_index
 
@@ -357,7 +376,7 @@ def p_array_expression_string(p):
     'array_expression   :   STRING'
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value)
-    expression = Instructions.Terminal(p.slice[1].type, p.slice[1].value)
+    expression = Terminal(p.slice[1].type, p.slice[1].value)
     add_to_node(node_index, expression)
     p[0] = node_index
 
@@ -369,7 +388,7 @@ def p_struct_definition(p):
         dot.edge(p[1], element)
         declarations.append(get_from_node(element))
     id = get_from_node(p[1])
-    new_struct_definition = Instructions.StructDefinition(id, declarations)
+    new_struct_definition = StructDefinition(id, declarations)
     add_to_node(p[1], new_struct_definition)
     p[0] = p[1]
 
@@ -388,10 +407,38 @@ def p_struct_instance(p):
     'struct_instance    :   struct_type identifier S_SEMICOLON'
     struct_type = get_from_node(p[1])
     identifier = get_from_node(p[2])
-    new_struct_instance = Instructions.StructInstance(struct_type, identifier)
+    if not identifier.index_list:
+        identifier.index_list = []
+    new_struct_instance = StructInstance(struct_type, identifier)
     add_to_node(p[1], new_struct_instance)
     dot.edge(p[1], p[2])
     p[0] = p[1]
+
+
+def p_struct_assignation(p):
+    'struct_assignation :   struct_identifier S_EQUAL expression S_SEMICOLON'
+    node_index = node_inc()
+    dot.node(node_index, '=')
+    dot.edge(node_index, p[1])
+    dot.edge(node_index, p[3])
+    expression = get_from_node(p[3])
+    struct_identifier = get_from_node(p[1])
+    new_struct_assignation = StructAssignation(struct_identifier, expression)
+    add_to_node(node_index, new_struct_assignation)
+    p[0] = node_index
+
+
+def p_struct_identifier(p):
+    'struct_identifier  :   identifier S_PERIOD identifier'
+    node_index = node_inc()
+    dot.node(node_index, '.')
+    dot.edge(node_index, p[1])
+    dot.edge(node_index, p[3])
+    identifier = get_from_node(p[1])
+    atribute = get_from_node(p[3])
+    new_struct_identifier = StructIdentifier(identifier, atribute)
+    add_to_node(node_index, new_struct_identifier)
+    p[0] = node_index
 
 
 def p_struct_type(p):
@@ -407,16 +454,14 @@ def p_identifier_array(p):
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value + '[ ]' * len(p[2]))
     # temp = get_id(p.slice[1].value)
-    index = ''
     index_list = []
     for node_bracket in p[2]:
         dot.edge(node_index, node_bracket)
-        index = index + '[' + ast_nodes.get(node_bracket) + ']'
         index_list.append(get_from_node(node_bracket))
     # ast_nodes.put(node_index, temp + index)
     # new_node = new_Leaf('IDENTIFIER', p.slice[1].value)
     # gda_nodes[node_index] = new_node
-    new_identifier = Instructions.Identifier(p.slice[1].value, index_list)
+    new_identifier = Identifier(p.slice[1].value, index_list)
     add_to_node(node_index, new_identifier)
     p[0] = node_index
 
@@ -429,7 +474,7 @@ def p_identifier(p):
     # temp = get_id(p.slice[1].value)
     # new_node = new_Leaf('IDENTIFIER', p.slice[1].value)
     # gda_nodes[node_index] = new_node
-    new_identifier = Instructions.Identifier(p.slice[1].value)
+    new_identifier = Identifier(p.slice[1].value)
     add_to_node(node_index, new_identifier)
     p[0] = node_index
 
@@ -442,7 +487,7 @@ def p_assignation(p):
     dot.edge(node_index, p[3])
     identifier = get_from_node(p[1])
     expression = get_from_node(p[3])
-    new_assignation = Instructions.Assignation(identifier, expression)
+    new_assignation = Assignation(identifier, expression)
     add_to_node(node_index, new_assignation)
     p[0] = node_index
 
@@ -462,8 +507,8 @@ def p_op_assignation(p):
     dot.edge(node_index, p[3])
     identifier = get_from_node(p[1])
     expression = get_from_node(p[3])
-    operation = Instructions.Binary(p.slice[2].value, identifier, expression)
-    new_assignation = Instructions.Assignation(identifier, operation)
+    operation = Binary(p.slice[2].value, identifier, expression)
+    new_assignation = Assignation(identifier, operation)
     add_to_node(node_index, new_assignation)
     p[0] = node_index
 
@@ -477,9 +522,9 @@ def p_op_shift_assignation(p):
     dot.edge(node_index, p[3])
     identifier = get_from_node(p[1])
     expression = get_from_node(p[3])
-    operation = Instructions.Binary(
+    operation = Binary(
         p.slice[2].value[:2], identifier, expression)
-    new_assignation = Instructions.Assignation(identifier, operation)
+    new_assignation = Assignation(identifier, operation)
     add_to_node(node_index, new_assignation)
     p[0] = node_index
 
@@ -501,7 +546,7 @@ def p_label(p):
     node_index_id = node_inc()
     dot.node(node_index_id, p.slice[1].value)
     dot.edge(node_index, node_index_id)
-    new_label = Instructions.Label(p.slice[1].value)
+    new_label = Label(p.slice[1].value)
     add_to_node(node_index, new_label)
     p[0] = node_index
 
@@ -514,7 +559,7 @@ def p_if(p):
     dot.edge(node_index, p[5])
     expression = get_from_node(p[3])
     instruction = get_from_node(p[5])
-    new_if = Instructions.If(expression, instruction)
+    new_if = If(expression, instruction)
     add_to_node(node_index, new_if)
     p[0] = node_index
 
@@ -532,7 +577,7 @@ def p_if_else(p):
     expression = get_from_node(p[3])
     if_instruction = get_from_node(p[5])
     else_instruction = get_from_node(p[7])
-    new_if_else = Instructions.IfElse(
+    new_if_else = IfElse(
         expression, if_instruction, else_instruction)
     add_to_node(node_index, new_if_else)
     p[0] = node_index
@@ -551,7 +596,7 @@ def p_switch(p):
         case_list.append(get_from_node(case))
     dot.edge(node_index, node_case_index)
     expression = get_from_node(p[3])
-    new_switch = Instructions.Switch(expression, case_list)
+    new_switch = Switch(expression, case_list)
     add_to_node(node_index, new_switch)
     p[0] = node_index
 
@@ -589,7 +634,7 @@ def p_case(p):
         instructions.append(get_from_node(instruction))
     dot.edge(node_index, node_instructions_index)
     expression = get_from_node(p[2])
-    new_case = Instructions.Case(expression, instructions)
+    new_case = Case(expression, instructions)
     add_to_node(node_index, new_case)
     p[0] = node_index
 
@@ -605,7 +650,7 @@ def p_default(p):
         dot.edge(node_instructions_index, instruction)
         instructions.append(get_from_node(instruction))
     dot.edge(node_index, node_instructions_index)
-    new_default = Instructions.Default(instructions)
+    new_default = Default(instructions)
     add_to_node(node_index, new_default)
     p[0] = node_index
 
@@ -618,7 +663,7 @@ def p_while(p):
     dot.edge(node_index, p[5])
     expression = get_from_node(p[3])
     instruction = get_from_node(p[5])
-    new_while = Instructions.While(expression, instruction)
+    new_while = While(expression, instruction)
     add_to_node(node_index, new_while)
     p[0] = node_index
 
@@ -634,7 +679,7 @@ def p_do(p):
     dot.edge(node_index, node_while_index)
     instruction = get_from_node(p[2])
     expression = get_from_node(p[5])
-    new_do = Instructions.Do(instruction, expression)
+    new_do = Do(instruction, expression)
     add_to_node(node_index, new_do)
     p[0] = node_index
 
@@ -651,7 +696,7 @@ def p_for_assignation(p):
     condition = get_from_node(p[4])
     step = get_from_node(p[6])
     instruction = get_from_node(p[8])
-    new_for = Instructions.For(init_value, condition, step, instruction)
+    new_for = For(init_value, condition, step, instruction)
     add_to_node(node_index, new_for)
     p[0] = node_index
 
@@ -668,7 +713,7 @@ def p_for_declaration(p):
     condition = get_from_node(p[4])
     step = get_from_node(p[6])
     instruction = get_from_node(p[8])
-    new_for = Instructions.For(init_value, condition, step, instruction)
+    new_for = For(init_value, condition, step, instruction)
     add_to_node(node_index, new_for)
     p[0] = node_index
 
@@ -684,7 +729,7 @@ def p_null(p):
     'null               :   S_SEMICOLON'
     node_index = node_inc()
     dot.node(node_index, ';')
-    new_null = Instructions.Null()
+    new_null = Null()
     add_to_node(node_index, new_null)
     p[0] = node_index
 
@@ -696,7 +741,7 @@ def p_goto(p):
     node_index_id = node_inc()
     dot.node(node_index_id, p.slice[2].value)
     dot.edge(node_index, node_index_id)
-    new_goto = Instructions.Goto(p.slice[2].value)
+    new_goto = Goto(p.slice[2].value)
     add_to_node(node_index, new_goto)
     p[0] = node_index
 
@@ -743,7 +788,7 @@ def p_scan(p):
     'scan               :   R_SCANF S_L_PAR S_R_PAR S_SEMICOLON'
     node_index = node_inc()
     dot.node(node_index, 'scanf( )')
-    new_scan = Instructions.Scan()
+    new_scan = Scan()
     add_to_node(node_index, new_scan)
     p[0] = node_index
 
@@ -764,7 +809,7 @@ def p_terminal_primitive(p):
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value)
     # terminal = new_Leaf(p.slice[1].type, p.slice[1].value)
-    new_terminal = Instructions.Terminal(p.slice[1].type, p.slice[1].value)
+    new_terminal = Terminal(p.slice[1].type, p.slice[1].value)
     add_to_node(node_index, new_terminal)
     p[0] = node_index
 
@@ -777,6 +822,11 @@ def p_terminal_expression(p):
 def p_terminal_function_identifier(p):
     '''terminal         :   function_call
                         |   identifier'''
+    p[0] = p[1]
+
+
+def p_terminal_struct_identifier(p):
+    'terminal           :   struct_identifier'
     p[0] = p[1]
 
 
@@ -807,7 +857,7 @@ def p_binary(p):
     # gda_nodes[node_index] = new_node
     operand1 = get_from_node(p[1])
     operand2 = get_from_node(p[3])
-    new_binary = Instructions.Binary(p.slice[2].value, operand1, operand2)
+    new_binary = Binary(p.slice[2].value, operand1, operand2)
     add_to_node(node_index, new_binary)
     p[0] = node_index
 
@@ -821,7 +871,7 @@ def p_unary(p):
     dot.node(node_index, p.slice[1].value)
     dot.edge(node_index, p[2])
     expression = get_from_node(p[2])
-    new_unary = Instructions.Unary(p.slice[1].value, expression)
+    new_unary = Unary(p.slice[1].value, expression)
     add_to_node(node_index, new_unary)
     p[0] = node_index
 
@@ -845,8 +895,8 @@ def p_post_inc(p):
     dot.node(node_index, p.slice[2].value)
     dot.edge(node_index, p[1])
     operand1 = get_from_node(p[1])
-    operand2 = Instructions.Terminal('INTEGER', '1')
-    new_binary = Instructions.Binary('+', operand1, operand2)
+    operand2 = Terminal('INTEGER', '1')
+    new_binary = Binary('+', operand1, operand2)
     add_to_node(node_index, new_binary)
     p[0] = node_index
 
@@ -856,9 +906,9 @@ def p_pre_inc(p):
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value)
     dot.edge(node_index, p[2])
-    operand1 = Instructions.Terminal('INTEGER', '1')
+    operand1 = Terminal('INTEGER', '1')
     operand2 = get_from_node(p[2])
-    new_binary = Instructions.Binary('+', operand1, operand2)
+    new_binary = Binary('+', operand1, operand2)
     add_to_node(node_index, new_binary)
     p[0] = node_index
 
@@ -875,8 +925,8 @@ def p_post_dec(p):
     dot.node(node_index, p.slice[2].value)
     dot.edge(node_index, p[1])
     operand1 = get_from_node(p[1])
-    operand2 = Instructions.Terminal('INTEGER', '1')
-    new_binary = Instructions.Binary('-', operand1, operand2)
+    operand2 = Terminal('INTEGER', '1')
+    new_binary = Binary('-', operand1, operand2)
     add_to_node(node_index, new_binary)
     p[0] = node_index
 
@@ -886,9 +936,9 @@ def p_pre_dec(p):
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value)
     dot.edge(node_index, p[2])
-    operand1 = Instructions.Terminal('INTEGER', '1')
+    operand1 = Terminal('INTEGER', '1')
     operand2 = get_from_node(p[2])
-    new_binary = Instructions.Binary('-', operand1, operand2)
+    new_binary = Binary('-', operand1, operand2)
     add_to_node(node_index, new_binary)
     p[0] = node_index
 
@@ -906,7 +956,7 @@ def p_ternary(p):
     operand1 = get_from_node(p[1])
     operand2 = get_from_node(p[3])
     operand3 = get_from_node(p[5])
-    new_ternary = Instructions.Ternary(operand1, operand2, operand3)
+    new_ternary = Ternary(operand1, operand2, operand3)
     add_to_node(node_ternary_index, new_ternary)
     p[0] = node_ternary_index
 
@@ -915,7 +965,7 @@ def p_function_call_empty(p):
     'function_call      :   ID S_L_PAR S_R_PAR'
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value + '( )')
-    new_function_call = Instructions.FunctionCall(p.slice[1].value)
+    new_function_call = FunctionCall(p.slice[1].value)
     add_to_node(node_index, new_function_call)
     p[0] = node_index
 
@@ -928,7 +978,7 @@ def p_function_call_expressions(p):
     for expression in p[3]:
         dot.edge(node_index, expression)
         parameters.append(get_from_node(expression))
-    new_function_call = Instructions.FunctionCall(p.slice[1].value, parameters)
+    new_function_call = FunctionCall(p.slice[1].value, parameters)
     add_to_node(node_index, new_function_call)
     p[0] = node_index
 
@@ -939,7 +989,7 @@ def p_function_call_sizeof(p):
     dot.node(node_index, 'sizeof( )')
     dot.edge(node_index, p[3])
     parameter = [get_from_node(p[3])]
-    new_function_call = Instructions.FunctionCall(p.slice[1].value, parameter)
+    new_function_call = FunctionCall(p.slice[1].value, parameter)
     add_to_node(node_index, new_function_call)
     p[0] = node_index
 
@@ -962,7 +1012,7 @@ def p_conversion(p):
     dot.node(node_index, '(' + p.slice[2].value + ')')
     dot.edge(node_index, p[4])
     expression = get_from_node(p[4])
-    new_conversion = Instructions.Conversion(p.slice[2].value, expression)
+    new_conversion = Conversion(p.slice[2].value, expression)
     add_to_node(node_index, new_conversion)
     p[0] = node_index
 
@@ -1009,8 +1059,7 @@ def parse(input):
     print('Valor ingresado:')
     print(input)
     instructions = yacc().parse(input)
-    dot.view()
-    print('Ya estufas :p')
+    # dot.view()
     return instructions
 
 
