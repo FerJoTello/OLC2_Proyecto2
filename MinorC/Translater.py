@@ -7,6 +7,7 @@ temp_count = -1
 labels = {}
 actual_label = ''
 if_count = -1
+for_count = -1
 
 
 def translate_instruction(instruction):
@@ -37,6 +38,10 @@ def translate_instruction(instruction):
             translate_if(instruction)
         elif isinstance(instruction, IfElse):
             translate_if_else(instruction)
+        elif isinstance(instruction, For):
+            translate_for(instruction)
+        elif isinstance(instruction, FunctionCall):
+            solve_function_call(instruction)
         elif isinstance(instruction, DeclarationList):
             translate_instruction(instruction.declarations)
         elif isinstance(instruction, StructAssignation):
@@ -55,9 +60,61 @@ def translate_instruction(instruction):
             append_to_label('exit;')
 
 
+def translate_for(_for: For):
+    # init_value puede ser una instruccion de asignacion o de declaracion, por lo que se traduce aparte
+    translate_instruction(_for.init_value)
+    # for_label es el que contiene las instrucciones que ejecutara el ciclo for
+    for_label = inc_for()
+    # continue_for_label es el que contiene el resto de instrucciones (las que se encuentran despues del bloque for)
+    continue_for_label = 'c_' + for_label
+    # se inicializa el nuevo label (for_label)
+    init_label(for_label)
+    # se agregan las instrucciones que el for debe de realizar
+    # entre ellas esta la verificacion de la condicion
+    condition = translate_expression(_for.condition)
+    # se utiliza backpatch, por lo que al no cumplir la condicion se ejecutaria las instrucciones que el for debe de realizar
+    append_to_label('if (!' + condition + ') goto ' +
+                    continue_for_label + ';\n')
+    # se traducen las instrucciones del bloque for
+    translate_instruction(_for.instruction)
+    # se traduce el 'step' del for. es una asignacion
+    translate_assignation(_for.step)
+    # finalmente se agrega el salto hacia el inicio de la etiqueta for_label para que vuelva a iterar
+    append_to_label('goto ' + for_label + ';\n')
+    # se inicializa continue_for_label como nuevo label y a el se le agregan las instrucciones pendientes. son las instrucciones fuera del for.
+    init_label(continue_for_label)
+
+
 def translate_print(print: Print):
-    'No hace nada aun'
-    
+    try:
+        # es una cadena con mas atributos
+        if len(print.expressions) > 1:
+            import re
+            # first deberia de contener la expresion principal del print por lo que es procesada para obtener un print
+            first: str = translate_expression(print.expressions[0])[1:-1]
+            pattern = r"%."
+            # se obtienen los valores del string
+            values = re.split(pattern, first)
+            # en caso de tener mas parametros se debe de concatenar los valores
+            i = 0
+            for expression in print.expressions[1:]:
+                expr = translate_expression(expression)
+                # se concatena la cadena ingresada...
+                append_to_label('print("' + values[i] + '");\n')
+                # ...con su expresion
+                append_to_label('print(' + expr + ');\n')
+                i = i+1
+            # si aun queda un ultimo valor que imprimir...
+            if i == len(values)-1 and len(values[i]) > 0:
+                # ... se concatena el ultimo valor
+                append_to_label('print("' + values[i] + '");\n')
+        else:
+            # solo deberia de ser una expresion por lo que se imprime sin agregar nada mas
+            first = translate_expression(print.expressions[0])
+            append_to_label('print(' + first + ');\n')
+    except Exception as e:
+        print("Error en print :c\n")
+        print(e)
 
 
 def translate_if_else(if_else: IfElse):
@@ -180,7 +237,7 @@ def translate_declaration(declaration: Declaration):
 
 
 def translate_main(main: Main):
-    global actual_scope, labels, actual_label
+    global actual_scope
     # el label 'main' de Augus se le concatena un salto hacia 'int_main' el cual representa a la funcion main() de MinorC
     append_to_label('goto int_main;\n', 'main')
     # se agrega a la tabla de simbolos actual
@@ -192,14 +249,17 @@ def translate_main(main: Main):
 
 
 def translate_function(function: Function):
-    global actual_scope, labels, actual_label
+    global actual_scope
+    # el label representa a la funcion indicando su tipo e identificador
     label = str(function.return_type.name) + '_' + function.id
-    labels[label] = label + ':\n'
-    actual_label = label
+    # se agrega a la tabla de simbolos actual
     actual_scope.put(function.id, label)
-    function_scope = Scope(actual_scope)
-    actual_scope = function_scope
+    # se inicializa el nuevo label
+    init_label(label)
+    # se traducen sus instrucciones
     translate_instruction(function.instructions)
+    # se le agrega un salto para indicar el regreso de la llamada
+    append_to_label('goto return_' + label + ';\n')
 
 
 def translate_expression(expression):
@@ -240,8 +300,15 @@ def translate_expression(expression):
         'Todavia no se :p'
 
 
-def solve_function_call(exp):
-    return 0
+def solve_function_call(function_call: FunctionCall):
+    global actual_scope
+    # de la tabla de simbolos se busca el label que representa a la funcion por medio de su id
+    label = actual_scope.get(function_call.id)
+    # se agrega un salto hacia el label de la funcion
+    append_to_label('goto ' + label + ';\n')
+    # inicializa un nuevo label que representa al retorno de la funcion.
+    # ejecutara las instrucciones restantes. las que se encuentran despues de la llamada
+    init_label('return_' + label)
 
 
 def get_id(identifier: Identifier):
@@ -288,6 +355,12 @@ def append_to_label(new_instr, label=None):
     instructions = labels.get(label)
     instructions = instructions + new_instr
     labels[label] = instructions
+
+
+def inc_for():
+    global for_count
+    for_count = for_count + 1
+    return 'for_' + str(for_count)
 
 
 def inc_if():

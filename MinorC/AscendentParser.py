@@ -750,6 +750,8 @@ def p_break(p):
     'break              :   R_BREAK S_SEMICOLON'
     node_index = node_inc()
     dot.node(node_index, 'break')
+    new_break = Break()
+    add_to_node(node_index, new_break)
     p[0] = node_index
 
 
@@ -757,6 +759,8 @@ def p_continue(p):
     'continue           :   R_CONTINUE S_SEMICOLON'
     node_index = node_inc()
     dot.node(node_index, 'continue')
+    new_continue = Continue()
+    add_to_node(node_index, new_continue)
     p[0] = node_index
 
 
@@ -764,6 +768,8 @@ def p_return_empty(p):
     'return             :   R_RETURN S_SEMICOLON'
     node_index = node_inc()
     dot.node(node_index, 'return')
+    new_return = Return()
+    add_to_node(node_index, new_return)
     p[0] = node_index
 
 
@@ -772,6 +778,9 @@ def p_return_expression(p):
     node_index = node_inc()
     dot.node(node_index, 'return')
     dot.edge(node_index, p[2])
+    expression = get_from_node(p[2])
+    new_return = Return(expression)
+    add_to_node(node_index, new_return)
     p[0] = node_index
 
 
@@ -779,8 +788,12 @@ def p_print(p):
     'print              :   R_PRINTF S_L_PAR list_expressions S_R_PAR S_SEMICOLON'
     node_index = node_inc()
     dot.node(node_index, 'printf( )')
+    expressions = []
     for expression in p[3]:
         dot.edge(node_index, expression)
+        expressions.append(get_from_node(expression))
+    new_print = Print(expressions)
+    add_to_node(node_index, new_print)
     p[0] = node_index
 
 
@@ -890,26 +903,28 @@ def p_inc(p):
 
 
 def p_post_inc(p):
-    'post_inc           :   terminal OP_INCREASE %prec POST_INCREMENT'
+    'post_inc           :   identifier OP_INCREASE %prec POST_INCREMENT'
     node_index = node_inc()
     dot.node(node_index, p.slice[2].value)
     dot.edge(node_index, p[1])
     operand1 = get_from_node(p[1])
     operand2 = Terminal('INTEGER', '1')
     new_binary = Binary('+', operand1, operand2)
-    add_to_node(node_index, new_binary)
+    new_assignation = Assignation(operand1, new_binary)
+    add_to_node(node_index, new_assignation)
     p[0] = node_index
 
 
 def p_pre_inc(p):
-    'pre_inc            :   OP_INCREASE terminal %prec PRE_INCREMENT'
+    'pre_inc            :   OP_INCREASE identifier %prec PRE_INCREMENT'
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value)
     dot.edge(node_index, p[2])
     operand1 = Terminal('INTEGER', '1')
     operand2 = get_from_node(p[2])
     new_binary = Binary('+', operand1, operand2)
-    add_to_node(node_index, new_binary)
+    new_assignation = Assignation(operand2, new_binary)
+    add_to_node(node_index, new_assignation)
     p[0] = node_index
 
 
@@ -920,26 +935,28 @@ def p_dec(p):
 
 
 def p_post_dec(p):
-    'post_dec           :   terminal OP_DECREASE %prec POST_DECREMENT'
+    'post_dec           :   identifier OP_DECREASE %prec POST_DECREMENT'
     node_index = node_inc()
     dot.node(node_index, p.slice[2].value)
     dot.edge(node_index, p[1])
     operand1 = get_from_node(p[1])
     operand2 = Terminal('INTEGER', '1')
     new_binary = Binary('-', operand1, operand2)
-    add_to_node(node_index, new_binary)
+    new_assignation = Assignation(operand1, new_binary)
+    add_to_node(node_index, new_assignation)
     p[0] = node_index
 
 
 def p_pre_dec(p):
-    'pre_dec            :   OP_DECREASE terminal %prec PRE_DECREMENT'
+    'pre_dec            :   OP_DECREASE identifier %prec PRE_DECREMENT'
     node_index = node_inc()
     dot.node(node_index, p.slice[1].value)
     dot.edge(node_index, p[2])
     operand1 = Terminal('INTEGER', '1')
     operand2 = get_from_node(p[2])
     new_binary = Binary('-', operand1, operand2)
-    add_to_node(node_index, new_binary)
+    new_assignation = Assignation(operand2, new_binary)
+    add_to_node(node_index, new_assignation)
     p[0] = node_index
 
 
@@ -1056,8 +1073,6 @@ def reset_ast_nodes():
 def parse(input):
     reset_dot()
     reset_ast_nodes()
-    print('Valor ingresado:')
-    print(input)
     instructions = yacc().parse(input)
     # dot.view()
     return instructions
