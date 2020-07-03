@@ -1,5 +1,6 @@
 #print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__,__name__,str(__package__)))
 from .ply import lex
+reported_errors = []
 
 reserved = {
     'auto':     'R_AUTO',
@@ -103,7 +104,7 @@ t_S_COLON               = r':'
 t_S_SEMICOLON           = r';'
 t_S_LESS                = r'<'
 t_S_GREATER             = r'>'
-t_OP_TERNARY             = r'\?'
+t_OP_TERNARY            = r'\?'
 t_OP_INCREASE           = r'\+\+'
 t_OP_DECREASE           = r'--'
 t_OP_ASSIGN_SUM         = r'\+='
@@ -162,11 +163,14 @@ def t_newline(t):
     t.lexer.lineno += t.value.count("\n")
 
 def t_error(t):
+    global reported_errors
+    print('Error lexico')
+    print(t)
     newError =  "<tr><td><center>Léxico</center></td>\n"
     newError = newError + "<td><center>El caracter '"+t.value[0]+"' no pertenece al lenguaje MinorC.</center></td>\n" 
     newError = newError + "<td><center>" + str(t.lineno) + "</center></td>\n"
     newError = newError + "</tr>\n"
-    #reported_errors.append(newError)
+    reported_errors.append(newError)
     t.lexer.skip(1)
 
 

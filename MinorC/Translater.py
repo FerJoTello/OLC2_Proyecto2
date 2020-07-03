@@ -66,13 +66,35 @@ def translate_instruction(instruction):
             append_to_label('exit;')
 
 
+def translate_switch(switch: Switch):
+    'Ya no hace nada'
+    switch_expression = translate_expression(switch.expression)
+    # switch_label_continuation es el que contiene las instrucciones siguientes a todo el bloque switch
+    switch_label_continuation = inc_if()
+    for case in switch.case_list:
+        if case.expression:
+            case_expr = translate_expression(case.expression)
+            if_expr = translate_expression(
+                Binary('==', switch_expression, case_expr))
+            # else_label es el que contiene las instrucciones que debe de realizar si NO se cumple la expresion
+            else_label = inc_if()
+            # al label que debe de contener el if se le agrega un salto condicional
+            # teniendo asi que si no se cumple la expresion original hace el salto a las instrucciones del else
+            # (se utiliza backpatch)
+            append_to_label('if (!' + if_expr + ') goto ' + else_label + ';\n')
+            translate_instruction(case.instructions)
+            append_to_label('goto ' + switch_label_continuation + ';\n')
+            init_label(else_label)
+
+
 def translate_return(_return: Return):
     global actual_function, actual_scope
     function = actual_scope.get(actual_function)
-    if _return.expression:
-        expression = translate_expression(_return.expression)
-        append_to_label('$v' + function.number + ' = ' + expression + ';\n')
     if actual_function != 'main':
+        if _return.expression:
+            expression = translate_expression(_return.expression)
+            append_to_label('$v' + function.number +
+                            ' = ' + expression + ';\n')
         append_to_label('goto return_' + function.label_tag + ';\n')
 
 
@@ -308,6 +330,8 @@ def translate_expression(expression):
             return solve_struct_identifier(expression)
         elif isinstance(expression, FunctionCall):
             return solve_function_call(expression)
+        elif isinstance(expression, Scan):
+            return 'read()'
         return expression.value
     elif isinstance(expression, Binary):
         temporal = inc_temp()

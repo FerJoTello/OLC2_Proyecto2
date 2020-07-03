@@ -145,9 +145,10 @@ class Case:
         self.instructions = instructions
 
 
-class Default:
+class Default(Case):
     def __init__(self, instructions):
         self.instructions = instructions
+        self.expression = None
 
 
 class While:
@@ -187,10 +188,6 @@ class Continue:
     'Sirve de instancia para trasladar la instruccion pero no guarda ningun atributo.'
 
 
-class Scan:
-    'Sirve de instancia para trasladar la instruccion pero no guarda ningun atributo.'
-
-
 class Return:
     def __init__(self, expression=None):
         self.expression = expression
@@ -216,6 +213,10 @@ class Terminal(Expression):
         if not value:
             value = set_value(type)
         self.value = value
+
+
+class Scan(Terminal):
+    'Sirve de instancia para trasladar la instruccion pero no guarda ningun atributo.'
 
 
 class Identifier(Terminal):

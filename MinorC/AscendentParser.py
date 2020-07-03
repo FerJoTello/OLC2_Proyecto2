@@ -213,10 +213,13 @@ def p_instruction(p):
                         |   continue
                         |   return
                         |   print
-                        |   scan
                         |   expression S_SEMICOLON'''
     p[0] = p[1]
 
+
+def p_instruction_error(p):
+    'instruction        :   error S_SEMICOLON'
+    p[0] = 'error'
 
 def p_declaration(p):
     'declaration        :   primitive_type list_declaration S_SEMICOLON'
@@ -797,10 +800,10 @@ def p_print(p):
 
 
 def p_scan(p):
-    'scan               :   R_SCANF S_L_PAR S_R_PAR S_SEMICOLON'
+    'scan               :   R_SCANF S_L_PAR S_R_PAR'
     node_index = node_inc()
     dot.node(node_index, 'scanf( )')
-    new_scan = Scan()
+    new_scan = Scan(None)
     add_to_node(node_index, new_scan)
     p[0] = node_index
 
@@ -833,6 +836,7 @@ def p_terminal_expression(p):
 
 def p_terminal_function_identifier(p):
     '''terminal         :   function_call
+                        |   scan
                         |   identifier'''
     p[0] = p[1]
 
@@ -1034,6 +1038,7 @@ def p_conversion(p):
 
 
 def p_error(p):
+    global reported_errors
     try:
         print('Error sintactico')
         print(p)
@@ -1042,9 +1047,14 @@ def p_error(p):
         newError = newError + "<td><center>" + \
             str(p.lineno) + "</center></td>\n"
         newError = newError + "</tr>\n"
-        # reported_errors.append(newError)
+        reported_errors.append(newError)
     except AttributeError:
         print('end of file')
+        newError = "<tr><td><center>Sintáctico</center></td>\n"
+        newError = newError + "<td><center>No se encontró caracter para la recuperacion.</center></td>\n"
+        newError = newError + "<td><center></center></td>\n"
+        newError = newError + "</tr>\n"
+        reported_errors.append(newError)
 
 
 def reset_dot():
@@ -1072,9 +1082,50 @@ def reset_ast_nodes():
 def parse(input):
     reset_dot()
     reset_ast_nodes()
+    lexer.lineno = 1
     instructions = yacc().parse(input)
-    # dot.view()
+    dot.render()
     return instructions
+
+
+def generate_error_report():
+    global reported_errors
+    errors_report = str("<html>\n" +
+                        "<head>\n" +
+                        "<meta charset='UTF-8'>\n" +
+                        "<title>Reporte - Errores</title>\n" +
+                        "<body>\n" +
+                        "<h1>\n" +
+                        "<center>Listado de Errores y su descripción</center>\n" +
+                        "</h1>\n" +
+                        "<body>\n" +
+                        "<center>\n" +
+                        "<p>\n" +
+                        "<br>\n" +
+                        "</p>\n" +
+                        "<table border= 4>\n" +
+                        "<tr>\n" +
+                        "<td><center><b>Tipo de Error</b></center></td>\n" +
+                        "<td><center><b>Descripción</b></center></td>\n" +
+                        "<td><center><b>Fila</b></center></td>\n" +
+                        "</tr>\n")
+    try:
+        for error in reported_errors:
+            errors_report = errors_report + error
+        errors_report = errors_report + str("</table>\n" +
+                                            "</center>\n" +
+                                            "</body>\n" +
+                                            "</html>")
+        import codecs
+        file = codecs.open("MinorC_Errors.html", "w", "utf-8")
+        file.write(errors_report)
+        file.close()
+    except Exception as e:
+        print(e)
+
+def reset_errors():
+    global reported_errors
+    reported_errors = []
 
 
 if __name__ == "__main__":

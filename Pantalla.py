@@ -30,36 +30,44 @@ from MinorC import AscendentParser
 from MinorC.Translater import start_translation as translate
 import traceback
 
+
 class MyLexer(QsciLexerCustom):
     def __init__(self, parent):
         super(MyLexer, self).__init__(parent)
         # Configuración general del edito
-        self.setDefaultColor(QColor("#ff000000"))  
+        self.setDefaultColor(QColor("#ff000000"))
         self.setDefaultPaper(QColor("#ffffffff"))
         self.setDefaultFont(QFont("Consolas", 12))
 
-        #SE INICIALIZAN LOS COLORES POR ESTILOS
-        self.setColor(QColor("#ff000000"), 0)                   # Estilo 0: negro   TEXTO EN GENERAL
-        self.setColor(QColor("#ff7f0000"), 1)                   # Estilo 1: rojo    PALABRAS RESERVADAS
-        self.setColor(QColor("#ff0000bf"), 2)                   # Estilo 2: azul    SIMBOLOS
-        self.setColor(QColor("#ff007f00"), 3)                   # Estilo 3: verde   COMENTARIOS
-        self.setColor(QColor(QColorConstants.DarkYellow), 4)    # Estilo 4: yellow  SIMBOLOS DE OPERACION
-        self.setColor(QColor(QColorConstants.Magenta), 5)       # Estilo 5: Magenta NUMEROS
-        self.setColor(QColor(QColorConstants.Gray), 6)          # Estilo 6: Gris    CADENAS
-        self.setPaper(QColor("#ffffffff"), 0)   
-        self.setPaper(QColor("#ffffffff"), 1)   
-        self.setPaper(QColor("#ffffffff"), 2)   
-        self.setPaper(QColor("#ffffffff"), 3)   
-        self.setPaper(QColor("#ffffffff"), 4)   
-        self.setPaper(QColor("#ffffffff"), 5)  
-        self.setPaper(QColor("#ffffffff"), 6)  
-        self.setFont(QFont("Consolas", 12), 0)   
-        self.setFont(QFont("Consolas", 12, weight=QFont.Bold), 1)   
-        self.setFont(QFont("Consolas", 12, weight=QFont.Bold), 2)   
+        # SE INICIALIZAN LOS COLORES POR ESTILOS
+        # Estilo 0: negro   TEXTO EN GENERAL
+        self.setColor(QColor("#ff000000"), 0)
+        # Estilo 1: rojo    PALABRAS RESERVADAS
+        self.setColor(QColor("#ff7f0000"), 1)
+        # Estilo 2: azul    SIMBOLOS
+        self.setColor(QColor("#ff0000bf"), 2)
+        # Estilo 3: verde   COMENTARIOS
+        self.setColor(QColor("#ff007f00"), 3)
+        # Estilo 4: yellow  SIMBOLOS DE OPERACION
+        self.setColor(QColor(QColorConstants.DarkYellow), 4)
+        # Estilo 5: Magenta NUMEROS
+        self.setColor(QColor(QColorConstants.Magenta), 5)
+        # Estilo 6: Gris    CADENAS
+        self.setColor(QColor(QColorConstants.Gray), 6)
+        self.setPaper(QColor("#ffffffff"), 0)
+        self.setPaper(QColor("#ffffffff"), 1)
+        self.setPaper(QColor("#ffffffff"), 2)
+        self.setPaper(QColor("#ffffffff"), 3)
+        self.setPaper(QColor("#ffffffff"), 4)
+        self.setPaper(QColor("#ffffffff"), 5)
+        self.setPaper(QColor("#ffffffff"), 6)
+        self.setFont(QFont("Consolas", 12), 0)
+        self.setFont(QFont("Consolas", 12, weight=QFont.Bold), 1)
+        self.setFont(QFont("Consolas", 12, weight=QFont.Bold), 2)
         self.setFont(QFont("Consolas", 11, weight=QFont.Cursive), 3)
-        self.setFont(QFont("Consolas", 12, weight=QFont.Bold), 4)   
-        self.setFont(QFont("Consolas", 12, weight=QFont.DemiBold), 5)   
-        self.setFont(QFont("Consolas", 12, weight=QFont.DemiBold), 6)  
+        self.setFont(QFont("Consolas", 12, weight=QFont.Bold), 4)
+        self.setFont(QFont("Consolas", 12, weight=QFont.DemiBold), 5)
+        self.setFont(QFont("Consolas", 12, weight=QFont.DemiBold), 6)
 
     def language(self):
         return "SimpleLanguage"
@@ -96,13 +104,14 @@ class MyLexer(QsciLexerCustom):
         p = re.compile(r"[*]\/|\/[*]|\s+|\w+|\W")
 
         # 'token_list' is a list of tuples: (token_name, token_len)
-        token_list = [ (token, len(bytearray(token, "utf-8"))) for token in p.findall(text)]
+        token_list = [(token, len(bytearray(token, "utf-8")))
+                      for token in p.findall(text)]
 
         # 4. Style the text
         # ------------------
         # 4.1 Check if multiline comment
         comentario = False
-        
+
         # 4.2 Style the text in a loop
         for i, token in enumerate(token_list):
             if comentario:
@@ -111,7 +120,7 @@ class MyLexer(QsciLexerCustom):
                 else:
                     self.setStyling(token[1], 3)
             else:
-                if token[0] in ["int", "float", "char", "goto", "if","unset","print","read","array","exit","abs","xor"]:
+                if token[0] in ["int", "float", "char", "goto", "if", "unset", "print", "read", "array", "exit", "abs", "xor"]:
                     self.setStyling(token[1], 1)
                 elif token[0] in ["(", ")", ";", ":", "[", "]"]:
                     self.setStyling(token[1], 2)
@@ -125,7 +134,8 @@ class MyLexer(QsciLexerCustom):
                 else:
                     # Default style
                     self.setStyling(token[1], 0)
-    
+
+
 class Ui_MainWindow(object):
 
     resultChanged = QtCore.pyqtSignal(str)
@@ -147,7 +157,8 @@ class Ui_MainWindow(object):
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
         self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 339, 469))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
-        self.tableWidget = QtWidgets.QTableWidget(self.scrollAreaWidgetContents)
+        self.tableWidget = QtWidgets.QTableWidget(
+            self.scrollAreaWidgetContents)
         self.tableWidget.setGeometry(QtCore.QRect(0, 0, 341, 471))
         self.tableWidget.setObjectName("tableWidget")
         self.tableWidget.setColumnCount(0)
@@ -168,7 +179,6 @@ class Ui_MainWindow(object):
         font.setWeight(75)
         font.setKerning(True)
 
-
         font2 = QtGui.QFont()
         font2.setFamily("Consolas")
         font2.setPointSize(13)
@@ -176,10 +186,9 @@ class Ui_MainWindow(object):
         font2.setWeight(100)
         font2.setKerning(True)
 
-
         self.consola.setFont(font2)
         self.consola.setAutoFillBackground(False)
-        #self.consola.setTextFormat(QtCore.Qt.RichText)
+        # self.consola.setTextFormat(QtCore.Qt.RichText)
         self.consola.setObjectName("consola")
         self.frame = QtWidgets.QFrame(self.centralwidget)
         self.frame.setGeometry(QtCore.QRect(-1, 0, 1001, 31))
@@ -225,17 +234,25 @@ class Ui_MainWindow(object):
         self.actionReemplazar = QtWidgets.QAction(MainWindow)
         self.actionReemplazar.setObjectName("actionReemplazar")
         self.actionEjecutar_Descendente = QtWidgets.QAction(MainWindow)
-        self.actionEjecutar_Descendente.setObjectName("actionEjecutar_Descendente")
+        self.actionEjecutar_Descendente.setObjectName(
+            "actionEjecutar_Descendente")
         self.actionEjecutar_Ascendente = QtWidgets.QAction(MainWindow)
-        self.actionEjecutar_Ascendente.setObjectName("actionEjecutar_Ascendente")
-        self.actionEjecutar_Paso_a_Paso_Ascendente = QtWidgets.QAction(MainWindow)
-        self.actionEjecutar_Paso_a_Paso_Ascendente.setObjectName("actionEjecutar_Paso_a_Paso_Ascendente")
+        self.actionEjecutar_Ascendente.setObjectName(
+            "actionEjecutar_Ascendente")
+        self.actionEjecutar_Paso_a_Paso_Ascendente = QtWidgets.QAction(
+            MainWindow)
+        self.actionEjecutar_Paso_a_Paso_Ascendente.setObjectName(
+            "actionEjecutar_Paso_a_Paso_Ascendente")
         self.actionTabla_de_Simbolos = QtWidgets.QAction(MainWindow)
         self.actionTabla_de_Simbolos.setObjectName("actionTabla_de_Simbolos")
         self.actionErrores = QtWidgets.QAction(MainWindow)
         self.actionErrores.setObjectName("actionErrores")
+        self.actionErroresMinorC = QtWidgets.QAction(MainWindow)
+        self.actionErroresMinorC.setObjectName("actionErroresMinorC")
         self.actionAST = QtWidgets.QAction(MainWindow)
         self.actionAST.setObjectName("actionAST")
+        self.actionASTMinorC = QtWidgets.QAction(MainWindow)
+        self.actionASTMinorC.setObjectName("actionASTMinorC")
         self.actionGramatical = QtWidgets.QAction(MainWindow)
         self.actionGramatical.setObjectName("actionGramatical")
 
@@ -258,7 +275,9 @@ class Ui_MainWindow(object):
         self.menuPrograma.addAction(self.actionEjecutar_Paso_a_Paso_Ascendente)
         self.menuReportes.addAction(self.actionTabla_de_Simbolos)
         self.menuReportes.addAction(self.actionErrores)
+        self.menuReportes.addAction(self.actionErroresMinorC)
         self.menuReportes.addAction(self.actionAST)
+        self.menuReportes.addAction(self.actionASTMinorC)
         self.menuReportes.addAction(self.actionGramatical)
         self.menuAyuda.addAction(self.actionAyuda)
         self.menuAyuda.addAction(self.actionAcercaDe)
@@ -267,26 +286,25 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuReportes.menuAction())
         self.menubar.addAction(self.menuAyuda.menuAction())
 
-
         self.__myFont = QFont()
         self.__myFont.setPointSize(12)
-        #************************************************ REGLAS DEL LENGUAJE AUGUS *****************************************
+        # ************************************************ REGLAS DEL LENGUAJE AUGUS *****************************************
         self.editor = QsciScintilla()
-        self.editor.setText("")              
-        self.editor.setLexer(None)           
-        self.editor.setUtf8(True)             
-        self.editor.setFont(self.__myFont)    
+        self.editor.setText("")
+        self.editor.setLexer(None)
+        self.editor.setUtf8(True)
+        self.editor.setFont(self.__myFont)
 
-        #AJUSTES DE TEXTO
+        # AJUSTES DE TEXTO
         self.editor.setWrapMode(QsciScintilla.WrapWord)
         self.editor.setWrapVisualFlags(QsciScintilla.WrapFlagByText)
         self.editor.setWrapIndentMode(QsciScintilla.WrapIndentIndented)
 
-        #FIN DE LINEA
+        # FIN DE LINEA
         self.editor.setEolMode(QsciScintilla.EolWindows)
         self.editor.setEolVisibility(False)
 
-        #SANGRIA
+        # SANGRIA
         self.editor.setIndentationsUseTabs(False)
         self.editor.setTabWidth(4)
         self.editor.setIndentationGuides(True)
@@ -300,10 +318,11 @@ class Ui_MainWindow(object):
 
         # MARGENES
         self.editor.setMarginType(0, QsciScintilla.NumberMargin)
-        self.editor.setMarginWidth(0, "0000")  #con este se puede quitar la linea
+        # con este se puede quitar la linea
+        self.editor.setMarginWidth(0, "0000")
         self.editor.setMarginsForegroundColor(QColor("#ff888888"))
 
-        #SE COLOCAN LAS REGLAS DEL EDITOR
+        # SE COLOCAN LAS REGLAS DEL EDITOR
         self.__lexer = QsciLexerRuby(self.editor)
         self.editor.setLexer(self.__lexer)
 
@@ -319,36 +338,39 @@ class Ui_MainWindow(object):
         self.actionGuardar_Como.triggered.connect(self.save_as)
         self.actionCerrrar.triggered.connect(self.clear)
         self.actionSalir.triggered.connect(self.exit)
-        self.ruta_archivo  = None
+        self.ruta_archivo = None
         self.actionEjecutar_Ascendente.triggered.connect(self.ascendente)
         self.actionEjecutar_Descendente.triggered.connect(self.descendente)
         self.actionTabla_de_Simbolos.triggered.connect(self.generarTabla)
         self.actionErrores.triggered.connect(self.generarRErrores)
+        self.actionErroresMinorC.triggered.connect(self.show_MinorC_errors)
         self.actionGramatical.triggered.connect(self.generarRGramatical)
         self.actionAST.triggered.connect(self.generarAST)
+        self.actionASTMinorC.triggered.connect(self.show_MinorC_ast)
 
         self.actionAcercaDe.triggered.connect(self.acercade)
         self.actionAyuda.triggered.connect(self.ayuda)
 
         self.ts_global = TS.Entorno(None)
-        self.ast =  AST.AST([]) 
+        self.ast = AST.AST([])
         self.listado_gramatical = []
         self.instrucciones = []
         self.hilo_terminado = True
-        self.actionEjecutar_Paso_a_Paso_Ascendente.triggered.connect(self.debugger)
-
+        self.actionEjecutar_Paso_a_Paso_Ascendente.triggered.connect(
+            self.debugger)
 
         self.tableWidget.setRowCount(100)
         self.tableWidget.setColumnCount(3)
-        self.tableWidget.setItem(0,0, QTableWidgetItem("No."))
-        self.tableWidget.setItem(0,1, QTableWidgetItem("Simbolo"))
-        self.tableWidget.setItem(0, 2 , QTableWidgetItem("Valor"))
+        self.tableWidget.setItem(0, 0, QTableWidgetItem("No."))
+        self.tableWidget.setItem(0, 1, QTableWidgetItem("Simbolo"))
+        self.tableWidget.setItem(0, 2, QTableWidgetItem("Valor"))
 
         self.tableWidget.setColumnWidth(0, 10)
         self.tableWidget.setColumnWidth(1, 75)
         self.tableWidget.setColumnWidth(2, 175)
 
-        self.consola.setStyleSheet("background-color: black;border: 1px solid black;color:green;") 
+        self.consola.setStyleSheet(
+            "background-color: black;border: 1px solid black;color:green;")
         #self.consola.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
 
     def clean(self):
@@ -371,12 +393,13 @@ class Ui_MainWindow(object):
         msg.setIcon(QMessageBox.Information)
 
         msg.setText("AUGUS IDE")
-        msg.setInformativeText("Puedes encontrar el manual de este proyecto en:\nhttps://tinyurl.com/yabg9why")
+        msg.setInformativeText(
+            "Puedes encontrar el manual de este proyecto en:\nhttps://tinyurl.com/yabg9why")
         msg.setWindowTitle("Ayuda")
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec_()
 
-    def setTexto(self,texto):
+    def setTexto(self, texto):
         self.consola.setText(self.consola.text() + texto)
 
     def generarAST(self):
@@ -385,62 +408,64 @@ class Ui_MainWindow(object):
 
     def generarTabla(self):
         reporteTablas = ReporteTablaSimbolos.ReporteTablaSimbolos()
-        reporteTablas.generarReporte(self.ts_global,self.ast)
+        reporteTablas.generarReporte(self.ts_global, self.ast)
 
     def generarRErrores(self):
         reporteErrores = ReporteErrores.ReporteErrores()
         reporteErrores.generarReporte()
 
     def generarRGramatical(self):
-        listado = self.listado_gramatical 
+        listado = self.listado_gramatical
         reporteGramatical = ReporteGramatical.ReporteGramatical()
         reporteGramatical.generarReporte(listado[0])
 
     def debugger(self):
         self.tableWidget.setRowCount(0)
         self.tableWidget.setRowCount(100)
-        self.tableWidget.setItem(0,0, QTableWidgetItem("No."))
-        self.tableWidget.setItem(0,1, QTableWidgetItem("Simbolo"))
-        self.tableWidget.setItem(0, 2 , QTableWidgetItem("Valor"))
-
-
+        self.tableWidget.setItem(0, 0, QTableWidgetItem("No."))
+        self.tableWidget.setItem(0, 1, QTableWidgetItem("Simbolo"))
+        self.tableWidget.setItem(0, 2, QTableWidgetItem("Valor"))
 
         if(self.hilo_terminado):
             sys.setrecursionlimit(2147483644)
             self.consola.clear()
-            ReporteErrores.func(None,True)
-            g.func(0,None)
+            ReporteErrores.func(None, True)
+            g.func(0, None)
             g.textoEntrada = self.editor.text()
             instrucciones = g.parse(self.editor.text())
             self.instrucciones = instrucciones
             ts_global = TS.Entorno(None)
-            ast = AST.AST(instrucciones) 
+            ast = AST.AST(instrucciones)
 
-            declaracion1 = Declaracion.Declaracion('$ra',0,0,0,"","GLOBAL")
-            declaracion2 = Declaracion.Declaracion('$sp',0,0,0,"","GLOBAL")
-            declaracion1.ejecutar(ts_global,ast,self,True)
-            declaracion2.ejecutar(ts_global,ast,self,True)
+            declaracion1 = Declaracion.Declaracion(
+                '$ra', 0, 0, 0, "", "GLOBAL")
+            declaracion2 = Declaracion.Declaracion(
+                '$sp', 0, 0, 0, "", "GLOBAL")
+            declaracion1.ejecutar(ts_global, ast, self, True)
+            declaracion2.ejecutar(ts_global, ast, self, True)
 
             bandera = False
             if(instrucciones != None):
                 for ins in instrucciones:
                     try:
                         if(bandera == False and ins.id != "main"):
-                            error = Error.Error("SEMANTICO","Error semantico, La primera etiqueta debe ser la etiqueta main:",ins.linea,ins.columna)
+                            error = Error.Error(
+                                "SEMANTICO", "Error semantico, La primera etiqueta debe ser la etiqueta main:", ins.linea, ins.columna)
                             ReporteErrores.func(error)
                             break
                         else:
                             bandera = True
                         if(ast.existeEtiqueta(ins)):
-                            error = Error.Error("SEMANTICO","Error semantico, Ya existe la etiqueta "+ins.id,ins.linea,ins.columna)
+                            error = Error.Error(
+                                "SEMANTICO", "Error semantico, Ya existe la etiqueta "+ins.id, ins.linea, ins.columna)
                             ReporteErrores.func(error)
                         else:
                             ast.agregarEtiqueta(ins)
                     except:
-                            pass
+                        pass
             self.ts_global = ts_global
             self.ast = ast
-            self.listado_gramatical = g.func(1,None).copy()
+            self.listado_gramatical = g.func(1, None).copy()
 
             self.debug()
 
@@ -455,41 +480,43 @@ class Ui_MainWindow(object):
         translation = translate(instructions)
         # se asigna el texto de entrada
         d.textoEntrada = translation
-        d.band(1,False)
-        ReporteErrores.func(None,True)
-        d.func(0,None)
+        d.band(1, False)
+        ReporteErrores.func(None, True)
+        d.func(0, None)
         # parsea la traduccion
         instrucciones = d.parse(translation)
+        AscendentParser.generate_error_report()
         # y ya opera todo lo que debe de operar...
         self.instrucciones = instrucciones
         ts_global = TS.Entorno(None)
         ts_global.asignarConsola(self.consola)
-        ast = AST.AST(instrucciones) 
+        ast = AST.AST(instrucciones)
 
-        declaracion1 = Declaracion.Declaracion('$ra',0,0,0,"","GLOBAL")
-        declaracion2 = Declaracion.Declaracion('$sp',0,0,0,"","GLOBAL")
-        declaracion1.ejecutar(ts_global,ast,self,False)
-        declaracion2.ejecutar(ts_global,ast,self,False)
+        declaracion1 = Declaracion.Declaracion('$ra', 0, 0, 0, "", "GLOBAL")
+        declaracion2 = Declaracion.Declaracion('$sp', 0, 0, 0, "", "GLOBAL")
+        declaracion1.ejecutar(ts_global, ast, self, False)
+        declaracion2.ejecutar(ts_global, ast, self, False)
 
-
-        #PRIMERA PASADA PARA GUARDAR TODAS LAS ETIQUETAS
+        # PRIMERA PASADA PARA GUARDAR TODAS LAS ETIQUETAS
         bandera = False
         if(instrucciones != None):
             for ins in instrucciones:
                 try:
                     if(bandera == False and ins.id != "main"):
-                        error = Error.Error("SEMANTICO","Error semantico, La primera etiqueta debe ser la etiqueta main:",ins.linea,ins.columna)
+                        error = Error.Error(
+                            "SEMANTICO", "Error semantico, La primera etiqueta debe ser la etiqueta main:", ins.linea, ins.columna)
                         ReporteErrores.func(error)
                         break
                     else:
                         bandera = True
                     if(ast.existeEtiqueta(ins)):
-                        error = Error.Error("SEMANTICO","Error semantico, Ya existe la etiqueta "+ins.id,ins.linea,ins.columna)
+                        error = Error.Error(
+                            "SEMANTICO", "Error semantico, Ya existe la etiqueta "+ins.id, ins.linea, ins.columna)
                         ReporteErrores.func(error)
                     else:
                         ast.agregarEtiqueta(ins)
                 except:
-                        pass
+                    pass
 
         main = ast.obtenerEtiqueta("main")
 
@@ -497,75 +524,80 @@ class Ui_MainWindow(object):
             salir = False
             for ins in main.instrucciones:
                 try:
-                    if(isinstance(ins,Asignacion.Asignacion) or isinstance(ins,Conversion.Conversion)):
+                    if(isinstance(ins, Asignacion.Asignacion) or isinstance(ins, Conversion.Conversion)):
                         ins.setAmbito("main")
 
-                    if(ins.ejecutar(ts_global,ast,self,False) == True):
+                    if(ins.ejecutar(ts_global, ast, self, False) == True):
                         salir = True
                         break
                 except:
                     pass
-            if(not salir):   
+            if(not salir):
                 siguiente = ast.obtenerSiguienteEtiqueta("main")
-                if(siguiente!=None):
-                    siguiente.ejecutar(ts_global,ast,self,False)
+                if(siguiente != None):
+                    siguiente.ejecutar(ts_global, ast, self, False)
         else:
-            error = Error.Error("SEMANTICO","Error semantico, No puede iniciarse el programa ya que no existe la etiqueta main:",0,0)
+            error = Error.Error(
+                "SEMANTICO", "Error semantico, No puede iniciarse el programa ya que no existe la etiqueta main:", 0, 0)
             ReporteErrores.func(error)
 
         listado = ReporteErrores.func(None)
-        if(len(listado)>0):
-            QMessageBox.critical(self.centralwidget, "Errores en Ejecución", "Se obtuvieron errores en la ejecución del Código Ingresado, verifique reporte de Errores")
+        if(len(listado) > 0):
+            QMessageBox.critical(self.centralwidget, "Errores en Ejecución",
+                                 "Se obtuvieron errores en la ejecución del Código Ingresado, verifique reporte de Errores")
 
         self.ts_global = ts_global
         self.ast = ast
-        self.listado_gramatical = d.func(1,None).copy()
+        self.listado_gramatical = d.func(1, None).copy()
 
     def ascendente(self):
         sys.setrecursionlimit(2147483644)
         self.consola.clear()
-        ReporteErrores.func(None,True)
+        ReporteErrores.func(None, True)
         # recuperando el texto
         input = self.editor.text()
         # instrucciones que genera el parser de MinorC
         instructions = AscendentParser.parse(input)
+        AscendentParser.generate_error_report()
+        AscendentParser.reset_errors()
         # traduccion de MinorC a codigo Augus
         translation = translate(instructions)
         # se asigna el texto de entrada
         g.textoEntrada = translation
-        g.func(0,None)
+        g.func(0, None)
         # parsea la traduccion
         instrucciones = g.parse(translation)
         # y ya opera todo lo que debe de operar...
         self.instrucciones = instrucciones
         ts_global = TS.Entorno(None)
         ts_global.asignarConsola(self.consola)
-        ast = AST.AST(instrucciones) 
+        ast = AST.AST(instrucciones)
 
-        declaracion1 = Declaracion.Declaracion('$ra',0,0,0,"","GLOBAL")
-        declaracion2 = Declaracion.Declaracion('$sp',0,0,0,"","GLOBAL")
-        declaracion1.ejecutar(ts_global,ast,self,False)
-        declaracion2.ejecutar(ts_global,ast,self,False)
+        declaracion1 = Declaracion.Declaracion('$ra', 0, 0, 0, "", "GLOBAL")
+        declaracion2 = Declaracion.Declaracion('$sp', 0, 0, 0, "", "GLOBAL")
+        declaracion1.ejecutar(ts_global, ast, self, False)
+        declaracion2.ejecutar(ts_global, ast, self, False)
 
-
-        #PRIMERA PASADA PARA GUARDAR TODAS LAS ETIQUETAS
+        # PRIMERA PASADA PARA GUARDAR TODAS LAS ETIQUETAS
         bandera = False
         if(instrucciones != None):
             for ins in instrucciones:
                 try:
                     if(bandera == False and ins.id != "main"):
-                        error = Error.Error("SEMANTICO","Error semantico, La primera etiqueta debe ser la etiqueta main:",ins.linea,ins.columna)
+                        error = Error.Error(
+                            "SEMANTICO", "Error semantico, La primera etiqueta debe ser la etiqueta main:", ins.linea, ins.columna)
                         ReporteErrores.func(error)
                         break
                     else:
                         bandera = True
                     if(ast.existeEtiqueta(ins)):
-                        error = Error.Error("SEMANTICO","Error semantico, Ya existe la etiqueta "+ins.id,ins.linea,ins.columna)
+                        error = Error.Error(
+                            "SEMANTICO", "Error semantico, Ya existe la etiqueta "+ins.id, ins.linea, ins.columna)
                         ReporteErrores.func(error)
                     else:
                         ast.agregarEtiqueta(ins)
                 except:
-                        pass
+                    pass
 
         main = ast.obtenerEtiqueta("main")
 
@@ -573,29 +605,31 @@ class Ui_MainWindow(object):
             salir = False
             for ins in main.instrucciones:
                 try:
-                    if(isinstance(ins,Asignacion.Asignacion) or isinstance(ins,Conversion.Conversion)):
+                    if(isinstance(ins, Asignacion.Asignacion) or isinstance(ins, Conversion.Conversion)):
                         ins.setAmbito("main")
 
-                    if(ins.ejecutar(ts_global,ast,self,False) == True):
+                    if(ins.ejecutar(ts_global, ast, self, False) == True):
                         salir = True
                         break
                 except:
                     pass
-            if(not salir):   
+            if(not salir):
                 siguiente = ast.obtenerSiguienteEtiqueta("main")
-                if(siguiente!=None):
-                    siguiente.ejecutar(ts_global,ast,self,False)
+                if(siguiente != None):
+                    siguiente.ejecutar(ts_global, ast, self, False)
         else:
-            error = Error.Error("SEMANTICO","Error semantico, No puede iniciarse el programa ya que no existe la etiqueta main:",0,0)
+            error = Error.Error(
+                "SEMANTICO", "Error semantico, No puede iniciarse el programa ya que no existe la etiqueta main:", 0, 0)
             ReporteErrores.func(error)
 
         listado = ReporteErrores.func(None)
-        if(len(listado)>0):
-            QMessageBox.critical(self.centralwidget, "Errores en Ejecución", "Se obtuvieron errores en la ejecución del Código Ingresado, verifique reporte de Errores")
+        if(len(listado) > 0):
+            QMessageBox.critical(self.centralwidget, "Errores en Ejecución",
+                                 "Se obtuvieron errores en la ejecución del Código Ingresado, verifique reporte de Errores")
 
         self.ts_global = ts_global
         self.ast = ast
-        self.listado_gramatical = g.func(1,None).copy()
+        self.listado_gramatical = g.func(1, None).copy()
 
     def debug(self):
         self.hilo_terminado = False
@@ -603,48 +637,52 @@ class Ui_MainWindow(object):
 
         if(main != None):
             salir = False
-            self.editor.setCursorPosition(0,0)
+            self.editor.setCursorPosition(0, 0)
             self.editor.setFocus()
             time.sleep(2)
             for ins in main.instrucciones:
                 QApplication.processEvents()
                 try:
-                    self.editor.setCursorPosition(ins.linea-1,0)
+                    self.editor.setCursorPosition(ins.linea-1, 0)
                     self.editor.setFocus()
                     time.sleep(2)
-                    if(isinstance(ins,Asignacion.Asignacion) or isinstance(ins,Conversion.Conversion)):
+                    if(isinstance(ins, Asignacion.Asignacion) or isinstance(ins, Conversion.Conversion)):
                         ins.setAmbito("main")
-                    if(ins.ejecutar(self.ts_global,self.ast,self,True) == True):
+                    if(ins.ejecutar(self.ts_global, self.ast, self, True) == True):
                         salir = True
                         break
-                    
+
                     contador = 1
                     self.tableWidget.setRowCount(0)
                     self.tableWidget.setRowCount(100)
-                    self.tableWidget.setItem(0,0, QTableWidgetItem("No."))
-                    self.tableWidget.setItem(0,1, QTableWidgetItem("Simbolo"))
-                    self.tableWidget.setItem(0, 2 , QTableWidgetItem("Valor"))
+                    self.tableWidget.setItem(0, 0, QTableWidgetItem("No."))
+                    self.tableWidget.setItem(0, 1, QTableWidgetItem("Simbolo"))
+                    self.tableWidget.setItem(0, 2, QTableWidgetItem("Valor"))
                     for key in self.ts_global.tabla:
                         s = self.ts_global.tabla[key]
-                        self.tableWidget.setItem(contador,0, QTableWidgetItem(str(contador)))
-                        self.tableWidget.setItem(contador,1, QTableWidgetItem(s.id))
-                        self.tableWidget.setItem(contador, 2 , QTableWidgetItem(str(s.valor)))
-                        contador = contador + 1 
-                    
-                    
+                        self.tableWidget.setItem(
+                            contador, 0, QTableWidgetItem(str(contador)))
+                        self.tableWidget.setItem(
+                            contador, 1, QTableWidgetItem(s.id))
+                        self.tableWidget.setItem(
+                            contador, 2, QTableWidgetItem(str(s.valor)))
+                        contador = contador + 1
+
                 except:
                     pass
-            
-            if(not salir):   
+
+            if(not salir):
                 siguiente = self.ast.obtenerSiguienteEtiqueta("main")
-                if(siguiente!=None):
-                    siguiente.ejecutar(self.ts_global,self.ast,self,True)
+                if(siguiente != None):
+                    siguiente.ejecutar(self.ts_global, self.ast, self, True)
         else:
-            error = Error.Error("SEMANTICO","Error semantico, No puede iniciarse el programa ya que no existe la etiqueta main:",0,0)
+            error = Error.Error(
+                "SEMANTICO", "Error semantico, No puede iniciarse el programa ya que no existe la etiqueta main:", 0, 0)
             ReporteErrores.func(error)
         listado = ReporteErrores.func(None)
-        if(len(listado)>0):
-            QMessageBox.critical(self.centralwidget, "Errores en Ejecución", "Se obtuvieron errores en la ejecución del Código Ingresado, verifique reporte de Errores")
+        if(len(listado) > 0):
+            QMessageBox.critical(self.centralwidget, "Errores en Ejecución",
+                                 "Se obtuvieron errores en la ejecución del Código Ingresado, verifique reporte de Errores")
         self.hilo_terminado = True
         #print ("Terminado hilo ")
 
@@ -658,45 +696,62 @@ class Ui_MainWindow(object):
     def open(self):
         root = tk.Tk()
         root.withdraw()
-        ruta = filedialog.askopenfilename(title="Seleccione un archivo de Entrada")
-        if not ruta: return
+        ruta = filedialog.askopenfilename(
+            title="Seleccione un archivo de Entrada")
+        if not ruta:
+            return
         try:
-            f = open(ruta,"r")
+            f = open(ruta, "r")
             input = f.read()
             self.editor.setText(input)
             f.close()
             self.ruta_archivo = ruta
         except Exception as e:
             raise
-            QMessageBox.critical(self.centralwidget,'Error Cargando el Archivo', 'No es posible abrir el archivo: %r' % ruta)
+            QMessageBox.critical(self.centralwidget, 'Error Cargando el Archivo',
+                                 'No es posible abrir el archivo: %r' % ruta)
 
     def save(self):
-        if(self.ruta_archivo==None):
+        if(self.ruta_archivo == None):
             root = tk.Tk()
             root.withdraw()
-            ruta = filedialog.asksaveasfilename(title="Seleccione la ruta donde desea guardar el Archivo",filetypes=[('all files', '.*'), ('text files', '.txt')])
+            ruta = filedialog.asksaveasfilename(title="Seleccione la ruta donde desea guardar el Archivo", filetypes=[
+                                                ('all files', '.*'), ('text files', '.txt')])
         else:
             ruta = self.ruta_archivo
-        if not ruta: return
+        if not ruta:
+            return
         try:
-            f = open(ruta,"w")
+            f = open(ruta, "w")
             f.write(self.editor.text())
             f.close()
         except Exception as e:
             raise
-            QMessageBox.critical(self.centralwidget,'Error Guardando el Archivo', 'No es posible guardar el archivo: %r' % ruta)
+            QMessageBox.critical(self.centralwidget, 'Error Guardando el Archivo',
+                                 'No es posible guardar el archivo: %r' % ruta)
 
     def save_as(self):
-        ruta = filedialog.asksaveasfilename(title="Seleccione la ruta donde desea guardar el Archivo",filetypes=[('all files', '.*'), ('text files', '.txt')])
-        if not ruta: return
+        ruta = filedialog.asksaveasfilename(title="Seleccione la ruta donde desea guardar el Archivo", filetypes=[
+                                            ('all files', '.*'), ('text files', '.txt')])
+        if not ruta:
+            return
         try:
-            f = open(ruta,"w")
+            f = open(ruta, "w")
             f.write(self.editor.text())
             f.close()
             self.ruta_archivo = ruta
         except Exception as e:
             raise
-            QMessageBox.critical(self.centralwidget,'Error Guardando el Archivo', 'No es posible guardar el archivo: %r' % ruta)
+            QMessageBox.critical(self.centralwidget, 'Error Guardando el Archivo',
+                                 'No es posible guardar el archivo: %r' % ruta)
+
+    def show_MinorC_errors(self):
+        import os
+        os.startfile('MinorC_errors.html', 'open')
+
+    def show_MinorC_ast(self):
+        import os
+        os.startfile('MinorC_AST.png', 'open')
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -709,34 +764,46 @@ class Ui_MainWindow(object):
         self.actionNuevo.setText(_translate("MainWindow", "Nuevo"))
         self.actionArbir.setText(_translate("MainWindow", "Abrir"))
         self.actionGuardar.setText(_translate("MainWindow", "Guardar"))
-        self.actionGuardar_Como.setText(_translate("MainWindow", "Guardar Como"))
+        self.actionGuardar_Como.setText(
+            _translate("MainWindow", "Guardar Como"))
         self.actionCerrrar.setText(_translate("MainWindow", "Cerrrar"))
         self.actionSalir.setText(_translate("MainWindow", "Salir"))
 
-        self.actionEjecutar_Descendente.setText(_translate("MainWindow", "Ejecutar Descendente"))
-        self.actionEjecutar_Ascendente.setText(_translate("MainWindow", "Ejecutar Ascendente"))
-        self.actionEjecutar_Paso_a_Paso_Ascendente.setText(_translate("MainWindow", "Ejecutar Paso a Paso Ascendente"))
-        self.actionTabla_de_Simbolos.setText(_translate("MainWindow", "Tabla de Simbolos"))
+        self.actionEjecutar_Descendente.setText(
+            _translate("MainWindow", "Ejecutar Descendente"))
+        self.actionEjecutar_Ascendente.setText(
+            _translate("MainWindow", "Ejecutar Ascendente"))
+        self.actionEjecutar_Paso_a_Paso_Ascendente.setText(
+            _translate("MainWindow", "Ejecutar Paso a Paso Ascendente"))
+        self.actionTabla_de_Simbolos.setText(
+            _translate("MainWindow", "Tabla de Simbolos"))
         self.actionErrores.setText(_translate("MainWindow", "Errores"))
+        self.actionErroresMinorC.setText(_translate("MainWindow", "Errores MinorC"))
         self.actionAST.setText(_translate("MainWindow", "AST"))
+        self.actionASTMinorC.setText(_translate("MainWindow", "AST MinorC"))
         self.actionGramatical.setText(_translate("MainWindow", "Gramatical"))
 
         self.actionAyuda.setText(_translate("MainWindow", "Ayuda"))
         self.actionAcercaDe.setText(_translate("MainWindow", "Acerca de"))
 
+
 interfaz = None
+
 
 def getUI():
     global interfaz
     return interfaz.consola
+
 
 if __name__ == "__main__":
     import sys
     sys.setrecursionlimit(10**9)
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    MainWindow.setWindowFlags(MainWindow.windowFlags() | QtCore.Qt.CustomizeWindowHint)
-    MainWindow.setWindowFlags(MainWindow.windowFlags() & ~QtCore.Qt.WindowMaximizeButtonHint)
+    MainWindow.setWindowFlags(MainWindow.windowFlags()
+                              | QtCore.Qt.CustomizeWindowHint)
+    MainWindow.setWindowFlags(MainWindow.windowFlags()
+                              & ~QtCore.Qt.WindowMaximizeButtonHint)
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     interfaz = ui
