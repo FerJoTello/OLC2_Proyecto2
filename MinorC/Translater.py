@@ -6,8 +6,10 @@ translation = ''
 temp_count = -1
 labels = {}
 actual_label = ''
+actual_function = ''
 if_count = -1
 for_count = -1
+function_count = -1
 
 
 def translate_instruction(instruction):
@@ -21,15 +23,17 @@ def translate_instruction(instruction):
             translate_instruction(instruction.instructions)
             actual_scope = saved_scope
         elif isinstance(instruction, Main):
-            saved_scope = actual_scope  # deberia ser el ambito global
+            saved_scope = actual_scope
             translate_main(instruction)
             actual_scope = saved_scope
         elif isinstance(instruction, Function):
-            saved_scope = actual_scope  # deberia ser el ambito global
+            saved_scope = actual_scope
             translate_function(instruction)
             actual_scope = saved_scope
         elif isinstance(instruction, Declaration):
             translate_declaration(instruction)
+        elif isinstance(instruction, ArrayDeclaration):
+            translate_array_declaration(instruction)
         elif isinstance(instruction, Assignation):
             translate_assignation(instruction)
         elif isinstance(instruction, Print):
@@ -42,6 +46,8 @@ def translate_instruction(instruction):
             translate_for(instruction)
         elif isinstance(instruction, FunctionCall):
             solve_function_call(instruction)
+        elif isinstance(instruction, Return):
+            translate_return(instruction)
         elif isinstance(instruction, DeclarationList):
             translate_instruction(instruction.declarations)
         elif isinstance(instruction, StructAssignation):
@@ -58,6 +64,20 @@ def translate_instruction(instruction):
             translate_expression(instruction)
         elif isinstance(instruction, Exit):
             append_to_label('exit;')
+
+
+def translate_return(_return: Return):
+    global actual_function, actual_scope
+    function = actual_scope.get(actual_function)
+    if _return.expression:
+        expression = translate_expression(_return.expression)
+        append_to_label('$v' + function.number + ' = ' + expression + ';\n')
+    if actual_function != 'main':
+        append_to_label('goto return_' + function.label_tag + ';\n')
+
+
+def translate_array_declaration(array_declaration: ArrayDeclaration):
+    'No hace nada aun xd'
 
 
 def translate_for(_for: For):
@@ -161,7 +181,6 @@ def init_label(label_name):
     '''Inicializa un nuevo label y se asigna como label actual'''
     global actual_label, labels
     labels[label_name] = label_name + ':\n'
-    # se asigna como el label actual a la continuacion del if
     actual_label = label_name
 
 
@@ -237,11 +256,13 @@ def translate_declaration(declaration: Declaration):
 
 
 def translate_main(main: Main):
-    global actual_scope
+    global actual_scope, actual_function
     # el label 'main' de Augus se le concatena un salto hacia 'int_main' el cual representa a la funcion main() de MinorC
     append_to_label('goto int_main;\n', 'main')
     # se agrega a la tabla de simbolos actual
     actual_scope.put('main', 'int_main')
+    # se asigna como funcion actual al main
+    actual_function = 'main'
     # se inicializa el nuevo label
     init_label('int_main')
     # traduce sus instrucciones (es un Block)
@@ -249,12 +270,29 @@ def translate_main(main: Main):
 
 
 def translate_function(function: Function):
-    global actual_scope
+    global actual_scope, actual_function
+    # se asigna como funcion actual al main
+    actual_function = function.id
+    # es el numero/clave de cada funcion. es unico
+    num_function = inc_function()
     # el label representa a la funcion indicando su tipo e identificador
     label = str(function.return_type.name) + '_' + function.id
-    # se agrega a la tabla de simbolos actual
-    actual_scope.put(function.id, label)
-    # se inicializa el nuevo label
+    # se actualizan los datos de la funcion
+    function.number = num_function
+    function.label_tag = label
+    # si la funcion posee parametros definidos entonces cada uno es inicializado en las variables de augus
+    if function.parameters:
+        append_to_label('$a' + num_function + ' = array();\n', 'main')
+        i = 0
+        for param in function.parameters:
+            solve_parameter(param, num_function, i)
+            i = i+1
+    # se agrega la funcion con su informacion a la tabla de simbolos actual
+    actual_scope.put(function.id, function)
+    # se inicializa un nuevo label el cual contiene los saltos hacia los labels que representan la continuacion a la llamada de una funcion
+    # a este se le asignaran los saltos posteriormente, por le momento solo se inicializa
+    init_label('return_' + label)
+    # se inicializa al label que representa a la funcion
     init_label(label)
     # se traducen sus instrucciones
     translate_instruction(function.instructions)
@@ -290,7 +328,8 @@ def translate_expression(expression):
         temporal = inc_temp()
         # $t0 = (int) 'operand';
         expr = translate_expression(expression.expression)
-        append_to_label(temporal + ' = (' + expression.type + ') ' + expr + ';\n')
+        append_to_label(
+            temporal + ' = (' + expression.type + ') ' + expr + ';\n')
         return temporal
     elif isinstance(expression, str):
         append_to_label(temporal + ' = ' + expression + ';\n')
@@ -301,13 +340,35 @@ def translate_expression(expression):
 
 def solve_function_call(function_call: FunctionCall):
     global actual_scope
-    # de la tabla de simbolos se busca el label que representa a la funcion por medio de su id
-    label = actual_scope.get(function_call.id)
-    # se agrega un salto hacia el label de la funcion
-    append_to_label('goto ' + label + ';\n')
-    # inicializa un nuevo label que representa al retorno de la funcion.
-    # ejecutara las instrucciones restantes. las que se encuentran despues de la llamada
-    init_label('return_' + label)
+    # de la tabla de simbolos se busca la funcion por medio de su id
+    function: Function = actual_scope.get(function_call.id)
+    # se obtiene un numero de llamada de la funcion
+    call_num = function.inc_call_count()
+    # si la llamada posee parametros deben de ser asignados
+    if function_call.parameters:
+        i = 0
+        try:
+            for param in function_call.parameters:
+                expression = translate_expression(param)
+                # $a0[0] = expr;
+                append_to_label('$a' + str(function.number) +
+                                '[' + str(i) + '] = ' + expression + ';\n')
+                i = i + 1
+        except Exception as e:
+            print("Error en los parametros de la llamada a: " + function.id)
+            print(e)
+    # se inicializa un valor de retorno por nivel
+    # indicando asi que la llamada fue hecha por el call_num actual y a esa direccion se debe de dirigir.
+    append_to_label('$ra[' + function.number + '] = ' + call_num + ';\n')
+    # se agrega un salto hacia el label de la funcion (hace la llamada)
+    append_to_label('goto ' + function.label_tag + ';\n')
+    # al label que contiene la informacion de los saltos para hacer el respectivo regreso se le concatena un salto condicional.
+    # si el valor del retorno de nivel para la funcion 'n' cumple con el numero de llamada se dirige hacia la etiqueta que contiene las instrucciones restantes.
+    append_to_label('if ($ra[' + function.number + '] == ' + call_num + ') goto c_' +
+                    function.label_tag + '_' + call_num + ';\n', 'return_' + function.label_tag)
+    # esta etiqueta que contiene las instrucciones restantes es inicializada y dichas instrucciones son agregadas para su posterior ejecucion
+    init_label('c_' + function.label_tag + '_' + call_num)
+    return '$v' + function.number
 
 
 def get_id(identifier: Identifier):
@@ -327,6 +388,13 @@ def get_id(identifier: Identifier):
     return temporal
 
 
+def solve_parameter(parameter: Parameter, function_num, param_num):
+    global actual_scope
+    id = parameter.id
+    # param_id:$a0[0]
+    actual_scope.put(id, '$a' + str(function_num) + '[' + str(param_num) + ']')
+
+
 def reset_translation():
     global actual_scope, translation, temp_count, if_count, labels, actual_label
     # Almacena los nombres de las variables de MinorC y los relaciona con las variables temporales de Augus
@@ -336,7 +404,7 @@ def reset_translation():
     if_count = -1
     labels = {}
     actual_label = 'main'
-    labels['main'] = 'main:\n'
+    labels['main'] = 'main:\n$ra=array();\n'
 
 
 def get_translation():
@@ -354,6 +422,12 @@ def append_to_label(new_instr, label=None):
     instructions = labels.get(label)
     instructions = instructions + new_instr
     labels[label] = instructions
+
+
+def inc_function():
+    global function_count
+    function_count = function_count + 1
+    return str(function_count)
 
 
 def inc_for():
@@ -378,7 +452,11 @@ def start_translation(instructions):
     reset_translation()
     print('Inicia traduccion:')
     translate_instruction(instructions)
-    return get_translation()
+    translation = get_translation()
+    file = open("Augus_translation.txt", "w")
+    file.write(translation)
+    file.close()
+    return translation
 
 
 if __name__ == "__main__":

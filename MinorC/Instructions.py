@@ -52,6 +52,13 @@ class Declaration:
         self.expression = expression
 
 
+class ArrayDeclaration:
+    def __init__(self, type, id, array_expression):
+        self.type = type
+        self.id = id
+        self.array_expression = array_expression
+
+
 class Assignation:
     def __init__(self, identifier, expression):
         self.identifier = identifier
@@ -70,6 +77,14 @@ class Function:
         self.id = id
         self.parameters = parameters
         self.instructions = instructions
+        # estos atributos son utilizados en la traduccion
+        self.number = 0
+        self.label_tag = ''
+        self.call_count = -1
+
+    def inc_call_count(self):
+        self.call_count = self.call_count + 1
+        return str(self.call_count)
 
 
 class Main:
@@ -78,6 +93,8 @@ class Main:
         self.id = 'main'
         self.parameters = None
         self.block = block
+        self.number = 0
+        self.label_tag = ''
 
 
 class StructDefinition:
